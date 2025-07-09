@@ -1,14 +1,13 @@
-
 import streamlit as st
 import matplotlib.pyplot as plt
+import pandas as pd
 
 st.set_page_config(page_title="Simulateur Budget Familial", layout="wide")
 
 st.title("📊 Simulateur de Budget Familial Casher")
-
 st.markdown("Utilisez ce simulateur pour estimer votre **reste à vivre mensuel** en fonction de vos revenus, aides et charges.")
 
-# --- Mise en page en deux colonnes ---
+# --- Mise en page en deux colonnes principales ---
 left, right = st.columns(2)
 
 # ==== Colonne gauche : Entrée des données ====
@@ -32,6 +31,17 @@ with left:
     st.subheader("📚 Cours particuliers")
     heures_cp = st.slider("Heures de cours particuliers par semaine", 0, 40, 5)
     tarif_cp = st.slider("Tarif horaire (€)", 0, 200, 20, step=5)
+
+    st.markdown("---")
+    st.header("⚙️ Ajustement des dépenses")
+    charges_logement = st.slider("Charges logement (eau, élec, internet...)", 0, 1000, 250, step=10)
+    courses = st.slider("Courses alimentaires casher", 500, 2000, 1400, step=50)
+    telephonie = st.slider("Téléphonie / Internet mobile", 0, 200, 50, step=10)
+    voiture = st.slider("Voiture (essence + assurance)", 0, 500, 200, step=10)
+    chien = st.slider("Dépenses pour le chien", 0, 200, 50, step=10)
+    bebe = st.slider("Produits bébé / hygiène", 0, 200, 70, step=10)
+    autres = st.slider("Autres charges fixes", 0, 500, 100, step=10)
+    imprevus = st.slider("Frais imprévus / marge", 0, 500, 100, step=10)
 
 # ==== Calculs ====
 # Revenu net estimé (brut - 23%)
@@ -64,13 +74,21 @@ elif "Assistante" in garde:
 else:
     garde_cout = 0
 
-# Charges fixes estimées
-charges = 250
-courses = 1500
-voiture = 200
-telephonie = 50
+# Dépenses détaillées
+depenses = {
+    "Loyer": loyer,
+    "Charges logement": charges_logement,
+    "Courses casher": courses,
+    "Téléphonie": telephonie,
+    "Voiture": voiture,
+    "Chien": chien,
+    "Hygiène / bébé": bebe,
+    "Autres charges fixes": autres,
+    "Frais imprévus": imprevus,
+    "Mode de garde": garde_cout
+}
 
-depenses_total = loyer + garde_cout + charges + courses + voiture + telephonie
+depenses_total = sum(depenses.values())
 reste_a_vivre = revenus_total + aides - depenses_total
 
 # ==== Colonne droite : Résultats ====
@@ -83,11 +101,15 @@ with right:
     st.metric("Total des charges", f"{depenses_total:,.0f} €")
     st.metric("💰 Reste à vivre mensuel", f"{reste_a_vivre:,.0f} €")
 
+    st.subheader("📋 Détail des dépenses")
+    df_dep = pd.DataFrame(depenses.items(), columns=["Poste", "Montant (€)"])
+    st.dataframe(df_dep.set_index("Poste"))
+
 # ==== Graphiques ====
 st.markdown("---")
 st.subheader("📊 Répartition des dépenses")
-labels = ["Loyer", "Garde", "Charges", "Courses", "Voiture", "Téléphonie"]
-values = [loyer, garde_cout, charges, courses, voiture, telephonie]
+labels = list(depenses.keys())
+values = list(depenses.values())
 fig, ax = plt.subplots()
 ax.pie(values, labels=labels, autopct='%1.1f%%', startangle=90)
 ax.axis("equal")
